@@ -1,7 +1,6 @@
 import { default as mongoose } from "mongoose";
 import asyncHandler from "express-async-handler";
-import { genSalt, hash, compare } from "bcrypt";
-import sign from "jsonwebtoken";
+import { genSalt, hash } from "bcrypt";
 import User from "../models/user.js";
 import multer, { diskStorage } from "multer";
 
@@ -95,29 +94,4 @@ export const createUser = asyncHandler(async (req, res) => {
 export const removeUserById = asyncHandler(async (req, res) => {
     await deleteOne({ _id: req.params.id });
     res.status(200).json({ message: `Deleted user with ID: ${req.params.id}` });
-});
-
-export const login = asyncHandler(async (req, res) => {
-    const user = await findOne({ email: req.body.email });
-
-    if (!user) {
-        res.status(404);
-        throw new Error(`User with E-mail: ${req.body.email} hasn't found.`);
-    }
-
-    const password = await compare(req.body.password, user.password);
-
-    if (!password) {
-        res.status(401);
-        throw new Error(`Wrong password!`);
-    }
-
-    const token = sign({ email: user.email, userId: user._id }, process.env.JWT_PRIVATE, { expiresIn: "1h" });
-
-    if (token) {
-        res.status(200).json({ message: "Authentication completed!", token: token });
-    } else {
-        res.status(401);
-        throw new Error(`JWT wasn't processed properly.`);
-    }
 });
