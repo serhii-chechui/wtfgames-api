@@ -1,8 +1,10 @@
 import bodyparser from "body-parser";
 import authRouter from "../routes/auth.js";
 import gamesRouter from "../routes/games.js";
+import applicationRouter from "../routes/applicatoins.js";
 import usersRoute from "../routes/users.js";
 import { errorHandler } from "../middleware/errorMiddleware.js";
+import { application } from "express";
 
 export default function (app) {
     // CORS headers
@@ -23,6 +25,7 @@ export default function (app) {
     // Routes
     app.use("/api/auth", authRouter);
     app.use("/api/games", gamesRouter);
+    app.use("/api/applications", applicationRouter);
     app.use("/api/users", usersRoute);
 
     // 404 handler
