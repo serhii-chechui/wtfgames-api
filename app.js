@@ -3,6 +3,7 @@ dotenv.config();
 import winston from "winston";
 import express from "express";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import connectDB from "./startup/db.js";
@@ -19,6 +20,7 @@ const __dirname = dirname(__filename);
 connectDB();
 
 app.use(morgan("dev"));
+app.use(cookieParser());
 
 app.use("/uploads", express.static(join(__dirname, "uploads")));
 app.use(express.static(join(__dirname, "middleware")));

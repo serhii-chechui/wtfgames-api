@@ -1,24 +1,30 @@
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
 
-export const checkAuth = asyncHandler(async (req, res, next) => {
-    if (!req.headers.authorization) {
-        res.status(401);
-        throw new Error(`Request header doesn't contain any authorization.`);
-    }
+// Токен берём из httpOnly-cookie (основной способ для админ-панели) либо из
+// заголовка Authorization: Bearer <token> (запасной путь, напр. server-to-server).
+const extractToken = (req) => {
+    if (req.cookies && req.cookies.token) return req.cookies.token;
 
-    if (!req.headers.authorization.startsWith("Bearer")) {
+    const header = req.headers.authorization;
+    if (header && header.startsWith("Bearer ")) return header.split(" ")[1];
+
+    return null;
+};
+
+export const checkAuth = asyncHandler(async (req, res, next) => {
+    const token = extractToken(req);
+
+    if (!token) {
         res.status(401);
-        throw new Error(`Request header doesn't properly use the Bearer authorization method.`);
+        throw new Error("Authentication required.");
     }
 
     try {
-        const token = req.headers.authorization.split(" ")[1];
-        console.log(token);
-        const decoded = jwt.verify(token, process.env.JWT_PRIVATE);
-        req.userData = decoded;
+        req.userData = jwt.verify(token, process.env.JWT_PRIVATE);
         next();
     } catch (error) {
-        res.status(401).json({ message: `Authentication Failed: ${error.message}` });
+        res.status(401);
+        throw new Error(`Authentication failed: ${error.message}`);
     }
 });
