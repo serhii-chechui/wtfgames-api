@@ -1,7 +1,7 @@
 import bodyparser from "body-parser";
 import authRouter from "../routes/auth.js";
 import gamesRouter from "../routes/games.js";
-import applicationRouter from "../routes/applicatoins.js";
+import applicationRouter from "../routes/applications.js";
 import usersRoute from "../routes/users.js";
 import { errorHandler } from "../middleware/errorMiddleware.js";
 import { application } from "express";
