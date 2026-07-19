@@ -2,85 +2,90 @@
 
 Guidance for Claude Code when working in this repository.
 
-## Экосистема WTFGames
+## WTFGames ecosystem
 
-Проект — часть из трёх связанных репозиториев (соседние каталоги под
+This project is one of three related repositories (sibling directories under
 `~/Work/web/wtfgames/`):
 
-| Проект | Роль | Стек | Remote |
-|--------|------|------|--------|
-| `wtfgames-site` | Публичный фронтенд (сайт) | React 19 (CRA), Redux Toolkit, axios | GitHub `serhii-chechui/WTFGamesSiteClient` |
-| `wtfgames-site-admin` | Админ-панель | React 19 (CRA), Redux Toolkit, axios | Bitbucket `wtf_games/wtfgamessiteadmin` |
-| **`wtfgames-site-api`** | **Backend API (этот проект)** | Node.js, Express 4, MongoDB/Mongoose | GitHub `serhii-chechui/wtfgames-api` |
+| Project | Role | Stack | Remote |
+|---------|------|-------|--------|
+| `wtfgames-site` | Public frontend (website) | React 19 (CRA), Redux Toolkit, axios | GitHub `serhii-chechui/WTFGamesSiteClient` |
+| `wtfgames-site-admin` | Admin panel | React 19 (CRA), Redux Toolkit, axios | Bitbucket `wtf_games/wtfgamessiteadmin` |
+| **`wtfgames-site-api`** | **Backend API (this project)** | Node.js, Express 4, MongoDB/Mongoose | GitHub `serhii-chechui/wtfgames-api` |
 
-Оба фронтенда — потребители этого API. Публичный сайт использует только
-эндпоинты на чтение (`GET /api/games`, `GET /api/applications`) без
-аутентификации; админ-панель — изменяющие эндпоинты и управление
-пользователями (аутентификация через httpOnly-cookie с JWT, `withCredentials`).
+Both frontends consume this API. The public site uses read-only endpoints
+(`GET /api/games`, `GET /api/applications`) without authentication; the admin
+panel uses mutating endpoints and user management (auth via an httpOnly cookie
+carrying a JWT, `withCredentials`).
 
-> Примечание: в `package.json` указан устаревший Bitbucket-URL
-> (`wtf_games/wtfgamessiteapi`) — канонический remote проекта на GitHub
+> Note: `package.json` lists a stale Bitbucket URL
+> (`wtf_games/wtfgamessiteapi`) — the canonical remote is on GitHub
 > (`serhii-chechui/wtfgames-api`).
 
-## Этот проект (wtfgames-site-api)
+## This project (wtfgames-site-api)
 
-- **Модули:** ESM (`"type": "module"`). Node >= 20.19 (`.nvmrc`).
-- **Точка входа:** `bin/www` → `app.js`. Старт БД: `startup/db.js`,
-  регистрация роутов/CORS/error-handler: `startup/routes.js`.
-- **Запуск:** `npm start` (порт из `PORT`, по умолчанию `3156`);
+- **Modules:** ESM (`"type": "module"`). Node >= 20.19 (`.nvmrc`).
+- **Entry point:** `bin/www` → `app.js`. DB startup: `startup/db.js`;
+  route/CORS/error-handler registration: `startup/routes.js`.
+- **Run:** `npm start` (port from `PORT`, default `3156`);
   `npm run dev` — nodemon.
-- **База данных:** MongoDB Atlas через Mongoose 8.
-- **Хранилище файлов:** AWS S3 (`@aws-sdk/client-s3`), загрузка через multer +
-  ресайз через sharp.
-- **Аутентификация:** JWT в httpOnly-cookie (`controllers/auth.js`,
+- **Database:** MongoDB Atlas via Mongoose 8.
+- **File storage:** AWS S3 (`@aws-sdk/client-s3`), upload via multer +
+  resize via sharp.
+- **Authentication:** JWT in an httpOnly cookie (`controllers/auth.js`,
   `middleware/check-auth.js`). RBAC — `middleware/require-role.js`
-  (роль проверяется по БД).
+  (role verified against the DB).
 
-### Структура
+### Structure
 
-- `routes/` — определение маршрутов (публичное чтение vs `checkAuth` на мутациях).
-- `controllers/` — обработчики (HTTP + бизнес-логика + доступ к БД; отдельного
-  сервисного слоя нет — оправдано масштабом).
+- `routes/` — route definitions (public reads vs `checkAuth` on mutations).
+- `controllers/` — handlers (HTTP + business logic + DB access; there is no
+  separate service layer — justified by the project's scale).
 - `middleware/` — auth, RBAC, upload/S3/resize, mailer, error handler.
-- `models/` — Mongoose-схемы (`user`, `game`, `applications`).
-- Активные роутеры: `auth`, `games`, `applications`, `users`. Модули
-  `categories/products/orders/gift-certificate/main-page` — незавершённые
-  заготовки, не подключены.
+- `models/` — Mongoose schemas (`user`, `game`, `applications`).
+- Active routers: `auth`, `games`, `applications`, `users`. The
+  `categories/products/orders/gift-certificate/main-page` modules are
+  unfinished stubs and are not wired up.
 
-## Конвенции
+## Conventions
 
-- Ошибки пробрасываются через `throw` внутри `express-async-handler`;
-  централизованный `errorHandler` (`middleware/errorMiddleware.js`) формирует
-  JSON-ответ и уважает `err.status` / выставленный `res.status()`.
-- Никогда не отдавать наружу хеш пароля: `password` имеет `select: false`,
-  для проверки запрашивается явно (`.select("+password")`).
-- Изменяющие эндпоинты (`POST/PATCH/DELETE`) требуют `checkAuth`; чтение
-  `games`/`applications` — публичное. Управление `users` — только по ролям.
+- **Language:** all commit messages, documentation, and code comments must be
+  written in **English only**.
+- Errors are thrown via `throw` inside `express-async-handler`; the centralized
+  `errorHandler` (`middleware/errorMiddleware.js`) builds the JSON response and
+  respects `err.status` / a `res.status()` set beforehand.
+- Never expose the password hash: `password` has `select: false`; request it
+  explicitly (`.select("+password")`) when verifying.
+- Mutating endpoints (`POST/PATCH/DELETE`) require `checkAuth`; reading
+  `games`/`applications` is public. Managing `users` is role-gated.
 - **git-flow:** `main` (production) / `develop` (integration) / `feature/*`.
-  Релизы тегируются `vX.Y.Z` на `main` (текущий api — `v1.0.0`).
+  Releases are tagged `vX.Y.Z` on `main` (current api — `v1.0.0`).
   Conventional commits (`feat(...)`, `fix(...)`, `chore(...)`).
-  Коммитить локально; не пушить без явной просьбы.
+  Commit locally; do not push without an explicit request.
 
-## Production и деплой (AWS EC2)
+## Production and deployment (AWS EC2)
 
-CI/CD нет — ни пайплайна, ни Dockerfile, ни deploy-скрипта в репозитории.
-Push в `main` **не** триггерит деплой; выкатка на EC2 — ручной шаг мейнтейнера.
+There is no CI/CD — no pipeline, Dockerfile, or deploy script in the repo.
+Pushing `main` does not trigger a deploy; the EC2 rollout is a manual step by
+the maintainer.
 
-- **Backend (этот репозиторий):** build-шага нет — бампается версия и на EC2
-  выкатывается исходник. Работает как долгоживущий Node-процесс под **PM2**
-  (`pm2.log` в `.gitignore`), файлы — в AWS **S3** (`AWS_*` в
+- **Backend (this repo):** no build step — bump the version and deploy the
+  source to EC2. It runs as a long-lived Node process under **PM2**
+  (`pm2.log` is git-ignored); files live in AWS **S3** (`AWS_*` in
   `middleware/s3Upload.js`).
-- **Прод-домены** (все под `wtfgames.com.ua`, т.е. same-site / cross-subdomain):
-  - `wtfgames.com.ua` — публичный сайт
-  - `admin.wtfgames.com.ua` — админ-панель
-  - `api.wtfgames.com.ua` — этот API
-- **Прод-env на хосте** (не в репозитории): `COOKIE_SECURE=true`,
+- **Production domains** (all under `wtfgames.com.ua`, i.e. same-site /
+  cross-subdomain):
+  - `wtfgames.com.ua` — public site
+  - `admin.wtfgames.com.ua` — admin panel
+  - `api.wtfgames.com.ua` — this API
+- **Production env on the host** (not in the repo): `COOKIE_SECURE=true`,
   `COOKIE_SAMESITE=none`, `CLIENT_ORIGINS=https://admin.wtfgames.com.ua`,
-  плюс `JWT_PRIVATE`, `MONGO_URI`, `AWS_*`. Cookie-авторизация кросс-доменная,
-  поэтому admin и backend должны релизиться вместе — иначе логин ломается.
+  plus `JWT_PRIVATE`, `MONGO_URI`, `AWS_*`. Cookie auth is cross-domain, so
+  admin and backend must be released together — otherwise login breaks.
 
-## Известные ограничения
+## Known limitations
 
-- Нет автоматических тестов, Docker, CI/CD.
-- Нет TypeScript и слоя runtime-валидации (Zod/Joi) — ввод валидируется вручную.
-- Секреты — в `.env` (не в репозитории; см. `.env.example`).
+- No automated tests, Docker, or CI/CD.
+- No TypeScript and no runtime-validation layer (Zod/Joi) — input is validated
+  manually.
+- Secrets live in `.env` (not in the repo; see `.env.example`).

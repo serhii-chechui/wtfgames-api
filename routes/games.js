@@ -5,8 +5,8 @@ import { checkAuth } from "../middleware/check-auth.js";
 
 const router = Router();
 
-// Чтение игр — публично (нужно публичному сайту). Изменения — только для
-// аутентифицированных пользователей админ-панели.
+// Reading games is public (needed by the public site). Mutations are only for
+// authenticated admin-panel users.
 router.route("/").get(getAllGames).post(checkAuth, upload.single("Thumbnail"), createGame);
 router.route("/:id").get(getGameById).patch(checkAuth, updateGameById).delete(checkAuth, removeGameById);
 

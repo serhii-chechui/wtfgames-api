@@ -1,6 +1,6 @@
 export const errorHandler = (err, req, res, next) => {
-    // Порядок: явный err.status (напр. из 404-обработчика) → уже выставленный
-    // res.status() (наши throw'ы делают res.status(4xx) до throw) → иначе 500.
+    // Order: explicit err.status (e.g. from the 404 handler) → an already-set
+    // res.status() (our throws call res.status(4xx) before throwing) → else 500.
     const statusCode = err.status || err.statusCode || (res.statusCode !== 200 ? res.statusCode : 500);
     console.error(err.message);
     res.status(statusCode).json({

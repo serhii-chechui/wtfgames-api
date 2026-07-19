@@ -3,9 +3,9 @@ import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import User from "../models/user.js";
 
-// Опции httpOnly-cookie с JWT. secure/sameSite управляются через env,
-// чтобы работать и в dev (http, same-origin через CRA-прокси), и в prod
-// (https, возможно кросс-доменно: COOKIE_SECURE=true, COOKIE_SAMESITE=none).
+// httpOnly cookie options for the JWT. secure/sameSite are driven by env so it
+// works both in dev (http, same-origin via the CRA proxy) and in prod (https,
+// possibly cross-domain: COOKIE_SECURE=true, COOKIE_SAMESITE=none).
 const cookieOptions = () => ({
     httpOnly: true,
     secure: process.env.COOKIE_SECURE === "true",
@@ -13,9 +13,9 @@ const cookieOptions = () => ({
     path: "/",
 });
 
-const TOKEN_MAX_AGE_MS = 60 * 60 * 1000; // 1 час — совпадает со сроком JWT
+const TOKEN_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour — matches the JWT expiry
 
-// Никогда не отдаём наружу хеш пароля и лишние поля.
+// Never expose the password hash or any extra fields.
 const publicUser = (user) => ({
     _id: user._id,
     email: user.email,
@@ -24,25 +24,25 @@ const publicUser = (user) => ({
     lastname: user.lastname,
 });
 
-// @desc   Аутентификация: ставит httpOnly-cookie с JWT
+// @desc   Authenticate: sets an httpOnly cookie with the JWT
 // @route  POST /api/auth/login
 // @access Public
 export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // Защита от NoSQL-инъекции (CWE-943): в фильтр Mongo должна попасть строка,
-    // а не объект вроде {"$ne": null}. Проверяем тип ДО обращения к БД. Сообщение
-    // намеренно общее и не раскрывает, какое из полей отсутствует.
+    // NoSQL-injection guard (CWE-943): the Mongo filter must receive a string,
+    // not an object like {"$ne": null}. Validate the type BEFORE hitting the DB.
+    // The message is intentionally generic and does not reveal which field is missing.
     if (typeof email !== "string" || typeof password !== "string" || email === "" || password === "") {
         res.status(400);
         throw new Error("Email and password are required.");
     }
 
-    // password имеет select:false в схеме — для проверки его нужно запросить явно.
+    // password has select:false in the schema — request it explicitly to verify.
     const user = await User.findOne({ email }).select("+password").exec();
 
-    // Единое сообщение для «нет юзера» и «неверный пароль», чтобы не
-    // раскрывать существование e-mail (защита от user enumeration).
+    // Same message for "no user" and "wrong password" so we don't reveal whether
+    // the e-mail exists (protection against user enumeration).
     if (!user) {
         res.status(401);
         throw new Error("Invalid email or password.");
@@ -63,7 +63,7 @@ export const login = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Authentication completed!", user: publicUser(user) });
 });
 
-// @desc   Текущий аутентифицированный пользователь (для гидратации сессии)
+// @desc   Current authenticated user (used to hydrate the session)
 // @route  GET /api/auth/me
 // @access Private (checkAuth)
 export const getMe = asyncHandler(async (req, res) => {
@@ -75,7 +75,7 @@ export const getMe = asyncHandler(async (req, res) => {
     res.status(200).json({ user: publicUser(user) });
 });
 
-// @desc   Выход: очищает auth-cookie
+// @desc   Logout: clears the auth cookie
 // @route  POST /api/auth/logout
 // @access Public
 export const logout = asyncHandler(async (req, res) => {

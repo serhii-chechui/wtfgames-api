@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-// Возвращает только host из строки подключения, без логина/пароля.
-// Никогда не бросает: логирование не должно влиять на запуск.
+// Returns only the host from the connection string, without credentials.
+// Never throws: logging must not affect startup.
 const safeMongoHost = (uri) => {
     try {
         return new URL(uri).host;

@@ -1,10 +1,11 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/user.js";
 
-// RBAC-проверка. Роль проверяется АВТОРИТЕТНО по БД, а не по JWT: токен живёт
-// до 1 часа, а так изменение или удаление пользователя действует немедленно
-// (например, у уволенного сотрудника с ещё валидным токеном роль уже не пройдёт).
-// Требует, чтобы ранее в цепочке отработал checkAuth (заполняет req.userData).
+// RBAC check. The role is verified AUTHORITATIVELY against the DB, not the JWT:
+// a token lives for up to 1 hour, so this way a user's role change or deletion
+// takes effect immediately (e.g. a dismissed employee with a still-valid token
+// no longer passes the role check). Requires checkAuth earlier in the chain
+// (it populates req.userData).
 export const requireRole = (...allowedRoles) =>
     asyncHandler(async (req, res, next) => {
         const userId = req.userData?.userId;
@@ -24,7 +25,7 @@ export const requireRole = (...allowedRoles) =>
             throw new Error("Forbidden: insufficient role.");
         }
 
-        // Прокидываем актуальную роль дальше на случай, если хендлеру она нужна.
+        // Pass the current role downstream in case a handler needs it.
         req.userRole = user.role;
         next();
     });
