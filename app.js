@@ -1,22 +1,22 @@
 import dotenv from "dotenv";
 dotenv.config();
-import winston from "winston";
 import express from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import validateEnv from "./startup/validateEnv.js";
 import connectDB from "./startup/db.js";
 import routes from "./startup/routes.js";
 
 const app = express();
 
-// winston.add(winston.transports.File, { filename: "logfile.log" });
-
 // For __dirname replacement in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Fail fast if required env vars are missing, before opening the DB connection.
+validateEnv();
 connectDB();
 
 app.use(morgan("dev"));
