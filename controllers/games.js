@@ -36,10 +36,12 @@ export const getGameById = asyncHandler(async (req, res) => {
 // @access  Public
 export const createGame = asyncHandler(async (req, res) => {
     try {
-        const gameExists = await Game.findOne({ Title: req.body.title }).exec();
-        if (gameExists) return res.status(409).send(`Game with with title: ${req.body.title} is already exists.`);
+        console.log(req.body.Title);
+        const gameExists = await Game.findOne({ Title: req.body.Title }).exec();
+        if (gameExists) return res.status(409).send(`Game with with title: ${req.body.Title} is already exists.`);
 
         let thumbnailImg = null;
+
         if (req.file) {
             const resizedImage = await resizeImage(200, 200, req.file.buffer);
             thumbnailImg = await uploadFileToS3("games", resizedImage, req.file.originalname, req.file.mimetype);
@@ -47,14 +49,14 @@ export const createGame = asyncHandler(async (req, res) => {
 
         const game = await Game.create({
             _id: new mongoose.Types.ObjectId(),
-            Title: req.body.title,
-            Description: req.body.description,
+            Title: req.body.Title,
+            Description: req.body.Description,
             Thumbnail: thumbnailImg,
-            AppStoreUrl: req.body.appStoreUrl,
-            GooglePlayUrl: req.body.googlePlayUrl,
-            SteamUrl: req.body.steamUrl,
-            ItchIOUrl: req.body.itchIOUrl,
-            CommingSoon: req.body.commingSoon,
+            AppStoreUrl: req.body.AppStoreUrl,
+            GooglePlayUrl: req.body.GooglePlayUrl,
+            SteamUrl: req.body.SteamUrl,
+            ItchIOUrl: req.body.ItchIOUrl,
+            CommingSoon: req.body.CommingSoon,
         });
 
         await game.save();
