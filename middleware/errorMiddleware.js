@@ -10,6 +10,11 @@ export const errorHandler = (err, req, res, next) => {
     } else if (err.name === "CastError") {
         statusCode = 400;
         message = `Invalid value for '${err.path}'.`;
+    } else if (err.code === 11000) {
+        // Duplicate unique key (e.g. Title). Generic message — do not echo the
+        // raw driver error, which exposes the collection and index names.
+        statusCode = 409;
+        message = "A resource with the same unique field already exists.";
     }
 
     console.error(err.message);

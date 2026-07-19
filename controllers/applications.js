@@ -32,35 +32,35 @@ export const getApplicationById = asyncHandler(async (req, res) => {
 // @route   POST /api/applications
 // @access  Public
 export const createApplication = asyncHandler(async (req, res) => {
-    try {
-        const applicationExists = await Application.findOne({ Title: req.body.Title }).exec();
-        if (applicationExists) return res.status(409).send(`Application with title: ${req.body.Title} already exists.`);
-
-        let thumbnailImg = null;
-
-        if (req.file) {
-            const resizedImage = await resizeImage(200, 200, req.file.buffer);
-            thumbnailImg = await uploadFileToS3("applications", resizedImage, req.file.originalname, req.file.mimetype);
-        }
-
-        const application = await Application.create({
-            _id: new mongoose.Types.ObjectId(),
-            Title: req.body.Title,
-            Description: req.body.Description,
-            Thumbnail: thumbnailImg,
-            AppStoreUrl: req.body.AppStoreUrl,
-            GooglePlayUrl: req.body.GooglePlayUrl,
-            SteamUrl: req.body.SteamUrl,
-            ItchIOUrl: req.body.ItchIOUrl,
-            CommingSoon: req.body.CommingSoon,
-        });
-
-        await application.save();
-
-        res.status(201).json(application);
-    } catch (ex) {
-        throw new Error(ex);
+    // Friendly pre-check for the common case. The unique index on Title is the
+    // real guard against the race between this check and the insert (a concurrent
+    // create surfaces as E11000 -> 409 via errorMiddleware). No try/catch here:
+    // asyncHandler forwards errors (including E11000) to errorMiddleware.
+    const applicationExists = await Application.findOne({ Title: req.body.Title }).exec();
+    if (applicationExists) {
+        res.status(409);
+        throw new Error(`Application with title '${req.body.Title}' already exists.`);
     }
+
+    let thumbnailImg = null;
+    if (req.file) {
+        const resizedImage = await resizeImage(200, 200, req.file.buffer);
+        thumbnailImg = await uploadFileToS3("applications", resizedImage, req.file.originalname, req.file.mimetype);
+    }
+
+    const application = await Application.create({
+        _id: new mongoose.Types.ObjectId(),
+        Title: req.body.Title,
+        Description: req.body.Description,
+        Thumbnail: thumbnailImg,
+        AppStoreUrl: req.body.AppStoreUrl,
+        GooglePlayUrl: req.body.GooglePlayUrl,
+        SteamUrl: req.body.SteamUrl,
+        ItchIOUrl: req.body.ItchIOUrl,
+        CommingSoon: req.body.CommingSoon,
+    });
+
+    res.status(201).json(application);
 });
 
 // @desc    Updates application by ID
