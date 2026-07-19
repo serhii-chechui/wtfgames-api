@@ -1,7 +1,6 @@
 import { default as mongoose } from "mongoose";
 import asyncHandler from "express-async-handler";
 import Game from "../models/game.js";
-import winston from "winston";
 import { resizeImage } from "../middleware/resizeImages.js";
 import { uploadFileToS3 } from "../middleware/s3Upload.js";
 
@@ -21,14 +20,12 @@ export const getAllGames = asyncHandler(async (req, res) => {
 // @route   GET /api/games:ID
 // @access  Public
 export const getGameById = asyncHandler(async (req, res) => {
-    try {
-        const game = await Game.findById(req.params.id);
-        if (!game) return res.status(400).send("Issue with finding the game by id");
-        res.status(200).json(game);
-    } catch (ex) {
-        winston.log("info");
-        res.status(500).json({ error: ex.message || "Internal Server Error" });
+    const game = await Game.findById(req.params.id);
+    if (!game) {
+        res.status(404);
+        throw new Error(`Game with ID ${req.params.id} not found.`);
     }
+    res.status(200).json(game);
 });
 
 // @desc    Creates new game document
@@ -68,8 +65,9 @@ export const createGame = asyncHandler(async (req, res) => {
 });
 
 export const updateGameById = asyncHandler(async (req, res) => {
-    // Без try/catch: asyncHandler сам передаст исключение в errorMiddleware.
-    // Раньше catch проглатывал ошибку без ответа — запрос висел до таймаута.
+    // No try/catch: asyncHandler forwards the exception to errorMiddleware.
+    // The old catch swallowed the error without responding — the request hung
+    // until the client timed out.
     const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true, timestamps: true });
     if (!updatedGame) {
         res.status(404);

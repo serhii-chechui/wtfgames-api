@@ -1,7 +1,6 @@
 import { default as mongoose } from "mongoose";
 import asyncHandler from "express-async-handler";
 import Application from "../models/applications.js";
-import winston from "winston";
 import { resizeImage } from "../middleware/resizeImages.js";
 import { uploadFileToS3 } from "../middleware/s3Upload.js";
 
@@ -21,14 +20,12 @@ export const getAllApplications = asyncHandler(async (req, res) => {
 // @route   GET /api/applications/:id
 // @access  Public
 export const getApplicationById = asyncHandler(async (req, res) => {
-    try {
-        const application = await Application.findById(req.params.id);
-        if (!application) return res.status(404).send("Application not found.");
-        res.status(200).json(application);
-    } catch (ex) {
-        winston.log("info");
-        res.status(500).json({ error: ex.message || "Internal Server Error" });
+    const application = await Application.findById(req.params.id);
+    if (!application) {
+        res.status(404);
+        throw new Error(`Application with ID ${req.params.id} not found.`);
     }
+    res.status(200).json(application);
 });
 
 // @desc    Creates new application document
@@ -70,8 +67,9 @@ export const createApplication = asyncHandler(async (req, res) => {
 // @route   PUT /api/applications/:id
 // @access  Public
 export const updateApplicationById = asyncHandler(async (req, res) => {
-    // Без try/catch: asyncHandler сам передаст исключение в errorMiddleware.
-    // Раньше catch проглатывал ошибку без ответа — запрос висел до таймаута.
+    // No try/catch: asyncHandler forwards the exception to errorMiddleware.
+    // The old catch swallowed the error without responding — the request hung
+    // until the client timed out.
     const updatedApplication = await Application.findByIdAndUpdate(req.params.id, req.body, {
         new: true,
         timestamps: true,
