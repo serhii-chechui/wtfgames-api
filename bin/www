@@ -11,6 +11,12 @@ import http from "http";
 import mongoose from "mongoose";
 import app from "../app.js";
 import { logger } from "../config/logger.js";
+import validateEnv from "../startup/validateEnv.js";
+import connectDB from "../startup/db.js";
+
+// Fail fast on missing env, then open the DB connection, before serving.
+validateEnv();
+connectDB();
 
 /**
  * Get port from environment and store in Express.
