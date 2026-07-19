@@ -36,8 +36,8 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 // @route   GET /api/users:id
 // @access  Public
 export const getUserById = asyncHandler(async (req, res) => {
-    // User.findById (раньше вызывался несуществующий findById → всегда 500).
-    // password авто-исключён из выборки благодаря select:false в схеме.
+    // User.findById (previously an undefined findById was called → always 500).
+    // password is auto-excluded from the query thanks to select:false in the schema.
     const user = await User.findById(req.params.id);
     if (!user) {
         res.status(404);
@@ -70,9 +70,10 @@ export const createUser = asyncHandler(async (req, res) => {
         throw new Error("Password is too long!");
     }
 
-    // Роль берётся из тела запроса — валидируем по allow-list, иначе клиент мог бы
-    // прислать произвольное значение (mass assignment). Сам эндпоинт уже закрыт
-    // requireRole("owner"), но лишняя явная проверка исключает невалидную/пустую роль.
+    // The role comes from the request body — validate it against an allow-list,
+    // otherwise a client could send an arbitrary value (mass assignment). The
+    // endpoint is already guarded by requireRole("owner"), but this explicit
+    // check also rejects an invalid/empty role.
     const ALLOWED_ROLES = ["owner", "admin", "marketing", "employee"];
     if (!ALLOWED_ROLES.includes(req.body.role)) {
         res.status(400);
@@ -103,8 +104,8 @@ export const createUser = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    // Никогда не отдаём наружу хеш пароля: select:false не влияет на документ,
-    // созданный через create() в памяти, поэтому формируем безопасную форму явно.
+    // Never expose the password hash: select:false does not affect a document
+    // created in memory via create(), so build a safe shape explicitly.
     res.status(201).json({
         _id: user._id,
         email: user.email,
@@ -116,7 +117,7 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const removeUserById = asyncHandler(async (req, res) => {
-    // User.deleteOne (раньше вызывался несуществующий deleteOne → всегда 500).
+    // User.deleteOne (previously an undefined deleteOne was called → always 500).
     const result = await User.deleteOne({ _id: req.params.id });
     if (result.deletedCount === 0) {
         res.status(404);

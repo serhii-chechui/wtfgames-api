@@ -11,9 +11,9 @@ import { checkAuth } from "../middleware/check-auth.js";
 
 const router = Router();
 
-// Чтение — публично (нужно публичному сайту). Изменения — только для
-// аутентифицированных пользователей админ-панели. checkAuth стоит ПЕРЕД
-// upload.single, чтобы неавторизованный запрос не доходил до multer/S3.
+// Reading is public (needed by the public site). Mutations are only for
+// authenticated admin-panel users. checkAuth runs BEFORE upload.single so an
+// unauthenticated request never reaches multer/S3.
 router.route("/").get(getAllApplications).post(checkAuth, upload.single("Thumbnail"), createApplication);
 router
     .route("/:id")

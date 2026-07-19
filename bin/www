@@ -5,6 +5,7 @@
  */
 
 import http from "http";
+import mongoose from "mongoose";
 import app from "../app.js";
 
 /**
@@ -24,6 +25,34 @@ const server = http.createServer(app);
 server.listen(port);
 server.on("error", onError);
 server.on("listening", onListening);
+
+/**
+ * Graceful shutdown: stop accepting new connections, then close the DB
+ * connection. A watchdog forces exit if something hangs.
+ */
+function gracefulShutdown(signal) {
+    console.log(`${signal} received: shutting down gracefully...`);
+
+    const watchdog = setTimeout(() => {
+        console.error("Could not close connections in time, forcing exit.");
+        process.exit(1);
+    }, 10000);
+    watchdog.unref();
+
+    server.close(async () => {
+        try {
+            await mongoose.connection.close(false);
+            console.log("HTTP server and MongoDB connection closed.");
+            process.exit(0);
+        } catch (err) {
+            console.error(`Error during shutdown: ${err.message}`);
+            process.exit(1);
+        }
+    });
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 /**
  * Normalize a port into a number, string, or false.

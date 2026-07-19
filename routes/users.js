@@ -5,9 +5,9 @@ import { requireRole } from "../middleware/require-role.js";
 
 const router = Router();
 
-// Управление пользователями доступно только аутентифицированным
-// пользователям админ-панели. Первый пользователь создаётся через seed-скрипт.
-// Просмотр — owner и admin; создание/удаление учёток — только owner.
+// User management is available only to authenticated admin-panel users. The
+// first user is created via a seed script. Viewing — owner and admin;
+// creating/deleting accounts — owner only.
 router
     .route("/")
     .get(checkAuth, requireRole("owner", "admin"), getAllUsers)
