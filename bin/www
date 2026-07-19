@@ -4,8 +4,19 @@
  * Module dependencies.
  */
 
+// Load env before anything else so the logger picks up NODE_ENV/LOG_LEVEL at
+// import time (its format depends on NODE_ENV).
+import "dotenv/config";
 import http from "http";
+import mongoose from "mongoose";
 import app from "../app.js";
+import { logger } from "../config/logger.js";
+import validateEnv from "../startup/validateEnv.js";
+import connectDB from "../startup/db.js";
+
+// Fail fast on missing env, then open the DB connection, before serving.
+validateEnv();
+connectDB();
 
 /**
  * Get port from environment and store in Express.
@@ -24,6 +35,34 @@ const server = http.createServer(app);
 server.listen(port);
 server.on("error", onError);
 server.on("listening", onListening);
+
+/**
+ * Graceful shutdown: stop accepting new connections, then close the DB
+ * connection. A watchdog forces exit if something hangs.
+ */
+function gracefulShutdown(signal) {
+    logger.info(`${signal} received: shutting down gracefully...`);
+
+    const watchdog = setTimeout(() => {
+        logger.error("Could not close connections in time, forcing exit.");
+        process.exit(1);
+    }, 10000);
+    watchdog.unref();
+
+    server.close(async () => {
+        try {
+            await mongoose.connection.close(false);
+            logger.info("HTTP server and MongoDB connection closed.");
+            process.exit(0);
+        } catch (err) {
+            logger.error(`Error during shutdown: ${err.message}`);
+            process.exit(1);
+        }
+    });
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 /**
  * Normalize a port into a number, string, or false.
@@ -52,11 +91,11 @@ function onError(error) {
 
     switch (error.code) {
         case "EACCES":
-            console.error(bind + " requires elevated privileges");
+            logger.error(bind + " requires elevated privileges");
             process.exit(1);
             break;
         case "EADDRINUSE":
-            console.error(bind + " is already in use");
+            logger.error(bind + " is already in use");
             process.exit(1);
             break;
         default:
@@ -70,5 +109,5 @@ function onError(error) {
 function onListening() {
     const addr = server.address();
     const bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
-    console.log(`WTFGames API server is running on: ${bind}`);
+    logger.info(`WTFGames API server is running on: ${bind}`);
 }

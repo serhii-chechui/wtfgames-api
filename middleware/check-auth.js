@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
 
-// Токен берём из httpOnly-cookie (основной способ для админ-панели) либо из
-// заголовка Authorization: Bearer <token> (запасной путь, напр. server-to-server).
+// The token comes from the httpOnly cookie (primary path for the admin panel) or
+// from the Authorization: Bearer <token> header (fallback, e.g. server-to-server).
 const extractToken = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
 

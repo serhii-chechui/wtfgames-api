@@ -1,15 +1,15 @@
 import bodyparser from "body-parser";
 import authRouter from "../routes/auth.js";
 import gamesRouter from "../routes/games.js";
-import applicationRouter from "../routes/applicatoins.js";
+import applicationRouter from "../routes/applications.js";
 import usersRoute from "../routes/users.js";
 import { errorHandler } from "../middleware/errorMiddleware.js";
 import { application } from "express";
 
 export default function (app) {
-    // CORS: при работе с httpOnly-cookie нельзя использовать "*" —
-    // браузер отклонит credentialed-запрос. Отражаем origin из allow-list
-    // и разрешаем credentials.
+    // CORS: with httpOnly cookies we cannot use "*" — the browser rejects a
+    // credentialed request. Reflect the origin from an allow-list and allow
+    // credentials.
     const allowedOrigins = (process.env.CLIENT_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000")
         .split(",")
         .map((origin) => origin.trim())

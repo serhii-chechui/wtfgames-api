@@ -6,7 +6,7 @@ const applicationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             auto: true, // Optional: Mongoose can auto-generate _id if not provided
         },
-        Title: { type: String, required: true, lowercase: false, trim: true },
+        Title: { type: String, required: true, lowercase: false, trim: true, unique: true },
         Description: { type: String, required: true, lowercase: false, trim: true },
         Thumbnail: { type: String, required: false, lowercase: false, trim: true },
         AppStoreUrl: { type: String, required: false, lowercase: true, trim: true },
