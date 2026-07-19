@@ -2,6 +2,8 @@ import { Router } from "express";
 import { getAllUsers, getUserById, createUser, removeUserById } from "../controllers/users.js";
 import { checkAuth } from "../middleware/check-auth.js";
 import { requireRole } from "../middleware/require-role.js";
+import { validate } from "../middleware/validate.js";
+import { createUserSchema } from "../validation/schemas.js";
 
 const router = Router();
 
@@ -11,7 +13,7 @@ const router = Router();
 router
     .route("/")
     .get(checkAuth, requireRole("owner", "admin"), getAllUsers)
-    .post(checkAuth, requireRole("owner"), createUser);
+    .post(checkAuth, requireRole("owner"), validate(createUserSchema), createUser);
 router
     .route("/:id")
     .get(checkAuth, requireRole("owner", "admin"), getUserById)

@@ -46,63 +46,35 @@ export const getUserById = asyncHandler(async (req, res) => {
     res.status(200).json(user);
 });
 
-// @desc    Creates a new category
-// @route   POST /api/users:id
-// @access  Private
+// @desc    Creates a new user
+// @route   POST /api/users
+// @access  Private (owner)
 export const createUser = asyncHandler(async (req, res) => {
-    if (req.body.email === "") {
-        res.status(400);
-        throw new Error("E-mail is empty!");
-    }
+    // req.body is validated by createUserSchema (see routes/users.js): fields are
+    // present, typed, and role is restricted to the allowed enum (mass-assignment
+    // safe). Unknown keys are stripped by the schema.
+    const { email, password, mobile, role, firstname, lastname } = req.body;
 
-    if (req.body.password === "") {
-        res.status(400);
-        throw new Error("Password is empty!");
-    }
-
-    if (req.body.password.length < 3) {
-        res.status(400);
-        throw new Error("Password is too short!");
-    }
-
-    if (req.body.password.length > 32) {
-        res.status(400);
-        throw new Error("Password is too long!");
-    }
-
-    // The role comes from the request body — validate it against an allow-list,
-    // otherwise a client could send an arbitrary value (mass assignment). The
-    // endpoint is already guarded by requireRole("owner"), but this explicit
-    // check also rejects an invalid/empty role.
-    const ALLOWED_ROLES = ["owner", "admin", "marketing", "employee"];
-    if (!ALLOWED_ROLES.includes(req.body.role)) {
-        res.status(400);
-        throw new Error("Invalid or missing role.");
-    }
-
-    const userExists = await User.find({ email: req.body.email }).exec();
-
-    console.log(`User exists: ${userExists.length}`);
-
+    // Friendly pre-check; the unique index on email is the real guard (a race
+    // surfaces as E11000 -> 409 via errorMiddleware).
+    const userExists = await User.find({ email }).exec();
     if (userExists.length > 0) {
-        res.status(400);
-        throw new Error(`User with the E-mail: ${req.body.email} is already exists.`);
+        res.status(409);
+        throw new Error(`User with the email ${email} already exists.`);
     }
 
     const salt = await genSalt(10);
-    const hashedPassword = await hash(req.body.password, salt);
+    const hashedPassword = await hash(password, salt);
 
-    let user = await User.create({
+    const user = await User.create({
         _id: new mongoose.Types.ObjectId(),
-        email: req.body.email,
+        email,
         password: hashedPassword,
-        mobile: req.body.mobile,
-        role: req.body.role,
-        firstname: req.body.firstname,
-        lastname: req.body.lastname,
+        mobile,
+        role,
+        firstname,
+        lastname,
     });
-
-    await user.save();
 
     // Never expose the password hash: select:false does not affect a document
     // created in memory via create(), so build a safe shape explicitly.

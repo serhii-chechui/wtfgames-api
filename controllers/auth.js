@@ -28,15 +28,10 @@ const publicUser = (user) => ({
 // @route  POST /api/auth/login
 // @access Public
 export const login = asyncHandler(async (req, res) => {
+    // req.body is validated by loginSchema (see routes/auth.js): email/password
+    // are non-empty strings, so no object (e.g. {"$ne": null}) can reach the
+    // Mongo filter — NoSQL-injection safe (CWE-943).
     const { email, password } = req.body;
-
-    // NoSQL-injection guard (CWE-943): the Mongo filter must receive a string,
-    // not an object like {"$ne": null}. Validate the type BEFORE hitting the DB.
-    // The message is intentionally generic and does not reveal which field is missing.
-    if (typeof email !== "string" || typeof password !== "string" || email === "" || password === "") {
-        res.status(400);
-        throw new Error("Email and password are required.");
-    }
 
     // password has select:false in the schema — request it explicitly to verify.
     const user = await User.findOne({ email }).select("+password").exec();
