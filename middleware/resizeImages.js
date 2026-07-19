@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { logger } from "../config/logger.js";
 
 export const resizeImage = async (width, height, inputBuffer) => {
     try {
@@ -7,6 +8,9 @@ export const resizeImage = async (width, height, inputBuffer) => {
             .toBuffer({ resolveWithObject: false });
         return resizedImage;
     } catch (err) {
-        console.error(err.message);
+        // Re-throw so the caller returns an error instead of silently uploading
+        // an undefined buffer to S3 (previously the error was swallowed).
+        logger.error(`Image resize failed: ${err.message}`);
+        throw err;
     }
 };

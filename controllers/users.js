@@ -24,11 +24,9 @@ const upload = multer({
 // @route   GET /api/users
 // @access  Public
 export const getAllUsers = asyncHandler(async (req, res) => {
-    const users = await User.find()
-        .find()
-        .catch((err) => {
-            console.log(err);
-        });
+    // password is auto-excluded by select:false. Errors propagate to
+    // errorMiddleware (the previous double .find().catch swallowed them).
+    const users = await User.find();
     res.status(200).json(users);
 });
 

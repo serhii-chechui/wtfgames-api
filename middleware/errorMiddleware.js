@@ -1,3 +1,5 @@
+import { logger } from "../config/logger.js";
+
 export const errorHandler = (err, req, res, next) => {
     // Order: explicit err.status (e.g. from the 404 handler) → an already-set
     // res.status() (our throws call res.status(4xx) before throwing) → else 500.
@@ -17,7 +19,7 @@ export const errorHandler = (err, req, res, next) => {
         message = "A resource with the same unique field already exists.";
     }
 
-    console.error(err.message);
+    logger.error(err.message, { reqId: req.id, status: statusCode, stack: err.stack });
     res.status(statusCode).json({
         message,
         stack: process.env.NODE_ENV === "production" ? null : err.stack,
