@@ -23,7 +23,6 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 
 app.use("/uploads", express.static(join(__dirname, "uploads")));
-app.use(express.static(join(__dirname, "middleware")));
 app.use(express.static(join(__dirname, "public")));
 app.use("/public/stylesheets", express.static(join(__dirname, "/public/stylesheets/")));
 app.use("/public/images", express.static(join(__dirname, "/public/images/")));

@@ -28,7 +28,18 @@ const publicUser = (user) => ({
 // @route  POST /api/auth/login
 // @access Public
 export const login = asyncHandler(async (req, res) => {
-    const user = await User.findOne({ email: req.body.email }).exec();
+    const { email, password } = req.body;
+
+    // Защита от NoSQL-инъекции (CWE-943): в фильтр Mongo должна попасть строка,
+    // а не объект вроде {"$ne": null}. Проверяем тип ДО обращения к БД. Сообщение
+    // намеренно общее и не раскрывает, какое из полей отсутствует.
+    if (typeof email !== "string" || typeof password !== "string" || email === "" || password === "") {
+        res.status(400);
+        throw new Error("Email and password are required.");
+    }
+
+    // password имеет select:false в схеме — для проверки его нужно запросить явно.
+    const user = await User.findOne({ email }).select("+password").exec();
 
     // Единое сообщение для «нет юзера» и «неверный пароль», чтобы не
     // раскрывать существование e-mail (защита от user enumeration).
@@ -37,7 +48,7 @@ export const login = asyncHandler(async (req, res) => {
         throw new Error("Invalid email or password.");
     }
 
-    const passwordMatches = await bcrypt.compare(req.body.password || "", user.password);
+    const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
         res.status(401);
         throw new Error("Invalid email or password.");

@@ -68,25 +68,24 @@ export const createGame = asyncHandler(async (req, res) => {
 });
 
 export const updateGameById = asyncHandler(async (req, res) => {
-    try {
-        const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true, timestamps: true });
-        if (!updatedGame) return res.sendStatus(404).send("The game you want to update doesn't exists.");
-        res.status(200).send(updatedGame);
-    } catch (ex) {
-        console.error(ex.message);
+    // Без try/catch: asyncHandler сам передаст исключение в errorMiddleware.
+    // Раньше catch проглатывал ошибку без ответа — запрос висел до таймаута.
+    const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true, timestamps: true });
+    if (!updatedGame) {
+        res.status(404);
+        throw new Error("The game you want to update doesn't exist.");
     }
+    res.status(200).json(updatedGame);
 });
 
 // @desc    Deletes the game document
 // @route   DELETE /api/games:id
 // @access  Public
 export const removeGameById = asyncHandler(async (req, res) => {
-    try {
-        const deletedGame = await Game.findByIdAndDelete(req.params.id);
-        if (!deletedGame) return res.status(404).send(`The game with ID: ${req.params.id} doesn't exists.`);
-
-        res.status(200).json({ message: `The game with ID: ${req.params.id} was deleted.` });
-    } catch (ex) {
-        console.error(ex.message);
+    const deletedGame = await Game.findByIdAndDelete(req.params.id);
+    if (!deletedGame) {
+        res.status(404);
+        throw new Error(`The game with ID: ${req.params.id} doesn't exist.`);
     }
+    res.status(200).json({ message: `The game with ID: ${req.params.id} was deleted.` });
 });

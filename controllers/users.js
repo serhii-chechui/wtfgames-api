@@ -36,7 +36,13 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 // @route   GET /api/users:id
 // @access  Public
 export const getUserById = asyncHandler(async (req, res) => {
-    const user = await findById(req.params.id);
+    // User.findById (раньше вызывался несуществующий findById → всегда 500).
+    // password авто-исключён из выборки благодаря select:false в схеме.
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        res.status(404);
+        throw new Error(`User with ID ${req.params.id} not found.`);
+    }
     res.status(200).json(user);
 });
 
@@ -64,6 +70,15 @@ export const createUser = asyncHandler(async (req, res) => {
         throw new Error("Password is too long!");
     }
 
+    // Роль берётся из тела запроса — валидируем по allow-list, иначе клиент мог бы
+    // прислать произвольное значение (mass assignment). Сам эндпоинт уже закрыт
+    // requireRole("owner"), но лишняя явная проверка исключает невалидную/пустую роль.
+    const ALLOWED_ROLES = ["owner", "admin", "marketing", "employee"];
+    if (!ALLOWED_ROLES.includes(req.body.role)) {
+        res.status(400);
+        throw new Error("Invalid or missing role.");
+    }
+
     const userExists = await User.find({ email: req.body.email }).exec();
 
     console.log(`User exists: ${userExists.length}`);
@@ -88,10 +103,24 @@ export const createUser = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    res.status(201).json(user);
+    // Никогда не отдаём наружу хеш пароля: select:false не влияет на документ,
+    // созданный через create() в памяти, поэтому формируем безопасную форму явно.
+    res.status(201).json({
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        mobile: user.mobile,
+    });
 });
 
 export const removeUserById = asyncHandler(async (req, res) => {
-    await deleteOne({ _id: req.params.id });
+    // User.deleteOne (раньше вызывался несуществующий deleteOne → всегда 500).
+    const result = await User.deleteOne({ _id: req.params.id });
+    if (result.deletedCount === 0) {
+        res.status(404);
+        throw new Error(`User with ID ${req.params.id} not found.`);
+    }
     res.status(200).json({ message: `Deleted user with ID: ${req.params.id}` });
 });
