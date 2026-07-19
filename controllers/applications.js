@@ -70,28 +70,27 @@ export const createApplication = asyncHandler(async (req, res) => {
 // @route   PUT /api/applications/:id
 // @access  Public
 export const updateApplicationById = asyncHandler(async (req, res) => {
-    try {
-        const updatedApplication = await Application.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            timestamps: true,
-        });
-        if (!updatedApplication) return res.status(404).send("The application you want to update doesn't exist.");
-        res.status(200).json(updatedApplication);
-    } catch (ex) {
-        console.error(ex.message);
+    // Без try/catch: asyncHandler сам передаст исключение в errorMiddleware.
+    // Раньше catch проглатывал ошибку без ответа — запрос висел до таймаута.
+    const updatedApplication = await Application.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        timestamps: true,
+    });
+    if (!updatedApplication) {
+        res.status(404);
+        throw new Error("The application you want to update doesn't exist.");
     }
+    res.status(200).json(updatedApplication);
 });
 
 // @desc    Deletes application document
 // @route   DELETE /api/applications/:id
 // @access  Public
 export const removeApplicationById = asyncHandler(async (req, res) => {
-    try {
-        const deletedApplication = await Application.findByIdAndDelete(req.params.id);
-        if (!deletedApplication) return res.status(404).send(`Application with ID: ${req.params.id} doesn't exist.`);
-
-        res.status(200).json({ message: `Application with ID: ${req.params.id} was deleted.` });
-    } catch (ex) {
-        console.error(ex.message);
+    const deletedApplication = await Application.findByIdAndDelete(req.params.id);
+    if (!deletedApplication) {
+        res.status(404);
+        throw new Error(`Application with ID: ${req.params.id} doesn't exist.`);
     }
+    res.status(200).json({ message: `Application with ID: ${req.params.id} was deleted.` });
 });
