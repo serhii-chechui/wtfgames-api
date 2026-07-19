@@ -24,7 +24,7 @@ carrying a JWT, `withCredentials`).
 
 ## This project (wtfgames-site-api)
 
-- **Modules:** ESM (`"type": "module"`). Node >= 20.19 (`.nvmrc`).
+- **Modules:** ESM (`"type": "module"`). Node >= 22 (`.nvmrc` pins 22.23.1 LTS).
 - **Entry point:** `bin/www` → `app.js`. DB startup: `startup/db.js`;
   route/CORS/error-handler registration: `startup/routes.js`.
 - **Run:** `npm start` (port from `PORT`, default `3156`);
