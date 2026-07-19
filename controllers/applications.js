@@ -3,6 +3,7 @@ import asyncHandler from "express-async-handler";
 import Application from "../models/applications.js";
 import { resizeImage } from "../middleware/resizeImages.js";
 import { uploadFileToS3 } from "../middleware/s3Upload.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 
 // @desc    Get all applications
 // @route   GET /api/applications
@@ -10,7 +11,7 @@ import { uploadFileToS3 } from "../middleware/s3Upload.js";
 export const getAllApplications = asyncHandler(async (req, res) => {
     try {
         const applications = await Application.find();
-        res.status(200).json(applications);
+        sendSuccess(res, applications);
     } catch (ex) {
         res.status(500).json({ error: ex.message || "Internal Server Error" });
     }
@@ -25,7 +26,7 @@ export const getApplicationById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`Application with ID ${req.params.id} not found.`);
     }
-    res.status(200).json(application);
+    sendSuccess(res, application);
 });
 
 // @desc    Creates new application document
@@ -60,7 +61,7 @@ export const createApplication = asyncHandler(async (req, res) => {
         CommingSoon: req.body.CommingSoon,
     });
 
-    res.status(201).json(application);
+    sendSuccess(res, application, 201);
 });
 
 // @desc    Updates application by ID
@@ -96,7 +97,7 @@ export const updateApplicationById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("The application you want to update doesn't exist.");
     }
-    res.status(200).json(updatedApplication);
+    sendSuccess(res, updatedApplication);
 });
 
 // @desc    Deletes application document
@@ -108,5 +109,5 @@ export const removeApplicationById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`Application with ID: ${req.params.id} doesn't exist.`);
     }
-    res.status(200).json({ message: `Application with ID: ${req.params.id} was deleted.` });
+    sendSuccess(res, { message: `Application with ID: ${req.params.id} was deleted.` });
 });

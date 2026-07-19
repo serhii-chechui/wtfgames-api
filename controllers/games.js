@@ -3,6 +3,7 @@ import asyncHandler from "express-async-handler";
 import Game from "../models/game.js";
 import { resizeImage } from "../middleware/resizeImages.js";
 import { uploadFileToS3 } from "../middleware/s3Upload.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 
 // @desc    Get all games
 // @route   GET /api/games
@@ -10,7 +11,7 @@ import { uploadFileToS3 } from "../middleware/s3Upload.js";
 export const getAllGames = asyncHandler(async (req, res) => {
     try {
         const games = await Game.find();
-        res.status(200).json(games);
+        sendSuccess(res, games);
     } catch (ex) {
         res.status(500).json({ error: ex.message || "Internal Server Error" });
     }
@@ -25,7 +26,7 @@ export const getGameById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`Game with ID ${req.params.id} not found.`);
     }
-    res.status(200).json(game);
+    sendSuccess(res, game);
 });
 
 // @desc    Creates new game document
@@ -60,7 +61,7 @@ export const createGame = asyncHandler(async (req, res) => {
         CommingSoon: req.body.CommingSoon,
     });
 
-    res.status(201).json(game);
+    sendSuccess(res, game, 201);
 });
 
 // Fields a client may update. Excludes _id/timestamps and Thumbnail — the
@@ -93,7 +94,7 @@ export const updateGameById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("The game you want to update doesn't exist.");
     }
-    res.status(200).json(updatedGame);
+    sendSuccess(res, updatedGame);
 });
 
 // @desc    Deletes the game document
@@ -105,5 +106,5 @@ export const removeGameById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`The game with ID: ${req.params.id} doesn't exist.`);
     }
-    res.status(200).json({ message: `The game with ID: ${req.params.id} was deleted.` });
+    sendSuccess(res, { message: `The game with ID: ${req.params.id} was deleted.` });
 });
