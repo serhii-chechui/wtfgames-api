@@ -7,5 +7,5 @@ export const loginLimiter = rateLimit({
     max: 10, // attempts per IP per window
     standardHeaders: true, // expose RateLimit-* headers
     legacyHeaders: false,
-    message: { message: "Too many login attempts. Please try again later." },
+    message: { success: false, error: { message: "Too many login attempts. Please try again later." } },
 });

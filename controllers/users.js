@@ -3,6 +3,7 @@ import asyncHandler from "express-async-handler";
 import { genSalt, hash } from "bcrypt";
 import User from "../models/user.js";
 import multer, { diskStorage } from "multer";
+import { sendSuccess } from "../utils/apiResponse.js";
 
 const storage = diskStorage({
     destination: function (req, file, cb) {
@@ -27,7 +28,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     // password is auto-excluded by select:false. Errors propagate to
     // errorMiddleware (the previous double .find().catch swallowed them).
     const users = await User.find();
-    res.status(200).json(users);
+    sendSuccess(res, users);
 });
 
 // @desc    Get a speciefic user by id
@@ -41,7 +42,7 @@ export const getUserById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`User with ID ${req.params.id} not found.`);
     }
-    res.status(200).json(user);
+    sendSuccess(res, user);
 });
 
 // @desc    Creates a new user
@@ -76,14 +77,18 @@ export const createUser = asyncHandler(async (req, res) => {
 
     // Never expose the password hash: select:false does not affect a document
     // created in memory via create(), so build a safe shape explicitly.
-    res.status(201).json({
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        mobile: user.mobile,
-    });
+    sendSuccess(
+        res,
+        {
+            _id: user._id,
+            email: user.email,
+            role: user.role,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            mobile: user.mobile,
+        },
+        201
+    );
 });
 
 export const removeUserById = asyncHandler(async (req, res) => {
@@ -93,5 +98,5 @@ export const removeUserById = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error(`User with ID ${req.params.id} not found.`);
     }
-    res.status(200).json({ message: `Deleted user with ID: ${req.params.id}` });
+    sendSuccess(res, { message: `Deleted user with ID: ${req.params.id}` });
 });

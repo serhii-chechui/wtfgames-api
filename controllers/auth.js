@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import User from "../models/user.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 
 // httpOnly cookie options for the JWT. secure/sameSite are driven by env so it
 // works both in dev (http, same-origin via the CRA proxy) and in prod (https,
@@ -55,7 +56,7 @@ export const login = asyncHandler(async (req, res) => {
     });
 
     res.cookie("token", token, { ...cookieOptions(), maxAge: TOKEN_MAX_AGE_MS });
-    res.status(200).json({ message: "Authentication completed!", user: publicUser(user) });
+    sendSuccess(res, { user: publicUser(user) });
 });
 
 // @desc   Current authenticated user (used to hydrate the session)
@@ -67,7 +68,7 @@ export const getMe = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("User not found.");
     }
-    res.status(200).json({ user: publicUser(user) });
+    sendSuccess(res, { user: publicUser(user) });
 });
 
 // @desc   Logout: clears the auth cookie
@@ -75,5 +76,5 @@ export const getMe = asyncHandler(async (req, res) => {
 // @access Public
 export const logout = asyncHandler(async (req, res) => {
     res.clearCookie("token", cookieOptions());
-    res.status(200).json({ message: "Logged out." });
+    sendSuccess(res, { message: "Logged out." });
 });
