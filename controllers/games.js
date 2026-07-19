@@ -64,11 +64,32 @@ export const createGame = asyncHandler(async (req, res) => {
     }
 });
 
+// Fields a client may update. Excludes _id/timestamps and Thumbnail — the
+// thumbnail is managed by the upload pipeline, not a raw body string.
+const GAME_UPDATABLE_FIELDS = [
+    "Title",
+    "Description",
+    "AppStoreUrl",
+    "GooglePlayUrl",
+    "SteamUrl",
+    "ItchIOUrl",
+    "CommingSoon",
+];
+
 export const updateGameById = asyncHandler(async (req, res) => {
     // No try/catch: asyncHandler forwards the exception to errorMiddleware.
-    // The old catch swallowed the error without responding — the request hung
-    // until the client timed out.
-    const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true, timestamps: true });
+    // Pick only allow-listed fields (guards against mass assignment) and run
+    // schema validators on the update.
+    const update = {};
+    for (const field of GAME_UPDATABLE_FIELDS) {
+        if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+
+    const updatedGame = await Game.findByIdAndUpdate(req.params.id, update, {
+        new: true,
+        runValidators: true,
+        context: "query",
+    });
     if (!updatedGame) {
         res.status(404);
         throw new Error("The game you want to update doesn't exist.");

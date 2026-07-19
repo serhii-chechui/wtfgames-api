@@ -66,13 +66,31 @@ export const createApplication = asyncHandler(async (req, res) => {
 // @desc    Updates application by ID
 // @route   PUT /api/applications/:id
 // @access  Public
+// Fields a client may update. Excludes _id/timestamps and Thumbnail — the
+// thumbnail is managed by the upload pipeline, not a raw body string.
+const APPLICATION_UPDATABLE_FIELDS = [
+    "Title",
+    "Description",
+    "AppStoreUrl",
+    "GooglePlayUrl",
+    "SteamUrl",
+    "ItchIOUrl",
+    "CommingSoon",
+];
+
 export const updateApplicationById = asyncHandler(async (req, res) => {
     // No try/catch: asyncHandler forwards the exception to errorMiddleware.
-    // The old catch swallowed the error without responding — the request hung
-    // until the client timed out.
-    const updatedApplication = await Application.findByIdAndUpdate(req.params.id, req.body, {
+    // Pick only allow-listed fields (guards against mass assignment) and run
+    // schema validators on the update.
+    const update = {};
+    for (const field of APPLICATION_UPDATABLE_FIELDS) {
+        if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+
+    const updatedApplication = await Application.findByIdAndUpdate(req.params.id, update, {
         new: true,
-        timestamps: true,
+        runValidators: true,
+        context: "query",
     });
     if (!updatedApplication) {
         res.status(404);
